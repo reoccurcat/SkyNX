@@ -5,8 +5,8 @@ const DB = require('./Devlord_modules/DB.js');
 const Struct = require('struct');
 const net = require('net');
 const robot = require("robotjs");
-const VGen = require("vgen-xbox")
-const vgen = new VGen();
+//const VGen = require("vgen-xbox")
+//const vgen = new VGen();
 const GyroServ = require("./Devlord_modules/GyroServ.js");
 var ip = "0.0.0.0"
 var quality = 5;
@@ -39,9 +39,9 @@ hidStreamClient.on('error', function (ex) {
 var controllerIds = [];
 function plugControllerIn() {
   try {
-    var nCid = vgen.pluginNext();
-    controllerIds.push(nCid);
-    console.log("Plugged in controller " + nCid + ".");
+    //var nCid = vgen.pluginNext();
+    //controllerIds.push(nCid);
+    //console.log("Plugged in controller " + nCid + ".");
   }
   catch (e) {
     console.log("Could not plug in virtual controller. Make sure the driver is installed.");
@@ -50,20 +50,20 @@ function plugControllerIn() {
 }
 
 function startAudioProcess() {
-  ffmpegAudioProcess = spawn(
-    "./lib/ffmpeg.exe",
-    ["-y", "-f", "dshow", "-i", 'audio=virtual-audio-capturer', "-f", "s16le", "-ar", "16000", "-ac", "2", "-c:a", "pcm_s16le", "udp://" + ip + ":2224?pkt_size=640"],
-    { detached: false }
-  );
-  ffmpegAudioProcess.stdout.on("data", data => {
-    console.log(`${data}`);
-  });
-  ffmpegAudioProcess.stderr.on('data', (data) => {
-    console.error(`${data}`);
-  });
-  ffmpegAudioProcess.on('close', (code) => {
-    console.log(`AudioProcess process exited with code ${code}`);
-  });
+//  ffmpegAudioProcess = spawn(
+//    "/usr/bin/ffmpeg",
+//    ["-y", "-f", "alsa", "-i", 'audio=virtual-audio-capturer', "-f", "s16le", "-ar", "16000", "-ac", "2", "-c:a", "pcm_s16le", "udp://" + ip + ":2224?pkt_size=640"],
+//    { detached: false }
+//  );
+//  ffmpegAudioProcess.stdout.on("data", data => {
+//    console.log(`${data}`);
+//  });
+//  ffmpegAudioProcess.stderr.on('data', (data) => {
+//    console.error(`${data}`);
+//  });
+//  ffmpegAudioProcess.on('close', (code) => {
+//    console.log(`AudioProcess process exited with code ${code}`);
+//  });
 }
 function startVideoProcess() {
   var fps = 60;
@@ -72,7 +72,7 @@ function startVideoProcess() {
   }
   var ffmpegVideoArgs = [];
   if (encoding == "NVENC") { //Nvidia Encoding
-    ffmpegVideoArgs = ["-probesize", "50M", "-hwaccel", "auto", "-f", "gdigrab", "-framerate", fps, "-video_size", screenWidth + "x" + screenHeight, "-offset_x", "0", "-offset_y", "0", "-draw_mouse", "1", "-i", "desktop", "-c:v", "h264_nvenc", "-gpu", "0", "-rc", "cbr_ld_hq", "-zerolatency", "1", "-f", "h264", "-vf", "scale=1280x720", "-pix_fmt", "yuv420p", "-profile:v", "baseline", "-cq:v", "19", "-g", "999999", "-b:v", quality + "M", "-minrate", quality - 3 + "M", "-maxrate", quality + "M", "-bufsize", (quality / (fps / 4)) + "M", "tcp://" + ip + ":2222"];
+    ffmpegVideoArgs = ["-probesize", "50M", "-hwaccel", "auto", "-f", "x11grab", "-framerate", fps, "-video_size", screenWidth + "x" + screenHeight, "-draw_mouse", "1", "-i", "kmsgrab", "-c:v", "h264_nvenc", "-gpu", "0", "-rc", "cbr_ld_hq", "-zerolatency", "1", "-f", "h264", "-vf", "scale=1280x720", "-pix_fmt", "yuv420p", "-profile:v", "baseline", "-cq:v", "19", "-g", "999999", "-b:v", quality + "M", "-minrate", quality - 3 + "M", "-maxrate", quality + "M", "-bufsize", (quality / (fps / 4)) + "M", "tcp://" + ip + ":2222"];
     console.log("Using Nvidia Encoding");
   } else if (encoding == "AMDVCE") { //AMD Video Coding Engine
     ffmpegVideoArgs = ["-probesize", "50M", "-hwaccel", "auto", "-f", "gdigrab", "-framerate", fps, "-video_size", screenWidth + "x" + screenHeight, "-offset_x", "0", "-offset_y", "0", "-draw_mouse", "1", "-i", "desktop", "-f", "h264", "-c:v", "h264_amf", "-usage", "1", "-rc", "cbr", "-vf", "scale=1280x720", "-pix_fmt", "yuv420p", "-b:v", quality + "M", "-minrate", quality - 3 + "M", "-maxrate", quality + "M", "-bufsize", (quality / (fps / 4)) + "M", "tcp://" + ip + ":2222"];
@@ -81,11 +81,13 @@ function startVideoProcess() {
     ffmpegVideoArgs = ["-probesize", "50M", "-hwaccel", "auto", "-f", "gdigrab", "-framerate", fps, "-video_size", screenWidth + "x" + screenHeight, "-offset_x", "0", "-offset_y", "0", "-draw_mouse", "1", "-i", "desktop", "-f", "h264", "-c:v", "h264_qsv", "-preset", "faster", "-profile", "baseline", "-vf", "scale=1280x720", "-pix_fmt", "yuv420p", "-b:v", quality + "M", "-minrate", quality - 3 + "M", "-maxrate", quality + "M", "-bufsize", (quality / (fps / 4)) + "M", "tcp://" + ip + ":2222"];
     console.log("Using Intel QSV Encoding");
   } else { //CPU Software Encoding
-    ffmpegVideoArgs = ["-probesize", "50M", "-hwaccel", "auto", "-f", "gdigrab", "-framerate", fps, "-video_size", screenWidth + "x" + screenHeight, "-offset_x", "0", "-offset_y", "0", "-draw_mouse", "1", "-i", "desktop", "-f", "h264", "-vf", "scale=1280x720", "-preset", "ultrafast", "-tune", "zerolatency", "-pix_fmt", "yuv420p", "-profile:v", "baseline", "-x264-params", "nal-hrd=cbr", "-b:v", quality + "M", "-minrate", quality - 3 + "M", "-maxrate", quality + "M", "-bufsize", (quality / 2) + "M", "tcp://" + ip + ":2222"];
+    ffmpegVideoArgs = ["-probesize", "50M", "-hwaccel", "auto", "-f", "x11grab", "-framerate", fps, "-video_size", screenWidth + "x" + screenHeight, "-draw_mouse", "1", "-i", ":0.1+0,0", "-f", "h264", "-vf", "scale=1280x720", "-preset", "ultrafast", "-tune", "zerolatency", "-pix_fmt", "yuv420p", "-profile:v", "baseline", "-x264-params", "nal-hrd=cbr", "-b:v", quality + "M", "-minrate", quality - 3 + "M", "-maxrate", quality + "M", "-bufsize", (quality / 2) + "M", "tcp://" + ip + ":2222"];
+    
+    //ffmpegVideoArgs = ["-probesize", "50M", "-hwaccel", "auto", "-f", "gdigrab", "-framerate", fps, "-video_size", screenWidth + "x" + screenHeight, "-offset_x", "0", "-offset_y", "0", "-draw_mouse", "1", "-i", "desktop", "-f", "h264", "-vf", "scale=1280x720", "-preset", "ultrafast", "-tune", "zerolatency", "-pix_fmt", "yuv420p", "-profile:v", "baseline", "-x264-params", "nal-hrd=cbr", "-b:v", quality + "M", "-minrate", quality - 3 + "M", "-maxrate", quality + "M", "-bufsize", (quality / 2) + "M", "tcp://" + ip + ":2222"];
     console.log("Using CPU Encoding");
   }
   ffmpegProcess = spawn(
-    "./lib/ffmpeg.exe",
+    "/usr/bin/ffmpeg",
     ffmpegVideoArgs,
     {
       detached: false
@@ -207,76 +209,10 @@ function convertAnalogXY(x, y) {
 
 }
 function handleControllerInput(hid, controllerId, playerNumber) {
-  var heldKeys = hid.get("HeldKeys" + playerNumber);
-  var LJoyX = convertAnalog(hid.get("LJoyX" + playerNumber));
-  var LJoyY = convertAnalog(hid.get("LJoyY" + playerNumber));
-  var RJoyX = convertAnalog(hid.get("RJoyX" + playerNumber));
-  var RJoyY = convertAnalog(hid.get("RJoyY" + playerNumber));
-  vgen.setAxisL(controllerId, LJoyX, LJoyY);
-  vgen.setAxisR(controllerId, RJoyX, RJoyY);
-  var inputStates = heldKeysBitmask(heldKeys);
-  //Button mapping
-  if (!abxySwap) {
-    vgen.setButton(controllerId, vgen.Buttons.B, inputStates.A);
-    vgen.setButton(controllerId, vgen.Buttons.A, inputStates.B);
-    vgen.setButton(controllerId, vgen.Buttons.X, inputStates.Y);
-    vgen.setButton(controllerId, vgen.Buttons.Y, inputStates.X);
-  } else {
-    vgen.setButton(controllerId, vgen.Buttons.B, inputStates.B);
-    vgen.setButton(controllerId, vgen.Buttons.A, inputStates.A);
-    vgen.setButton(controllerId, vgen.Buttons.X, inputStates.X);
-    vgen.setButton(controllerId, vgen.Buttons.Y, inputStates.Y);
-  }
 
-  vgen.setButton(controllerId, vgen.Buttons.BACK, inputStates.Minus);
-  vgen.setButton(controllerId, vgen.Buttons.START, inputStates.Plus);
-  vgen.setButton(controllerId, vgen.Buttons.LEFT_SHOULDER, inputStates.L);
-  vgen.setButton(controllerId, vgen.Buttons.RIGHT_SHOULDER, inputStates.R);
-  vgen.setButton(controllerId, vgen.Buttons.LEFT_THUMB, inputStates.LS);
-  vgen.setButton(controllerId, vgen.Buttons.RIGHT_THUMB, inputStates.RS);
-  //Trigger Mapping
-  if (inputStates.ZL) {
-    vgen.setTriggerL(controllerId, 1);
-  } else {
-    vgen.setTriggerL(controllerId, 0);
-  }
-  if (inputStates.ZR) {
-    vgen.setTriggerR(controllerId, 1);
-  } else {
-    vgen.setTriggerR(controllerId, 0);
-  }
-  //Dpad mapping
-  if (inputStates.Up || inputStates.Down || inputStates.Left || inputStates.Right) {
-    if (inputStates.Up) {
-      if (inputStates.Left || inputStates.Right) {
-        if (inputStates.Left) {
-          vgen.setDpad(controllerId, vgen.Dpad.UP_LEFT);
-        } else {
-          vgen.setDpad(controllerId, vgen.Dpad.UP_RIGHT);
-        }
-      } else {
-        vgen.setDpad(controllerId, vgen.Dpad.UP);
-      }
-    } else if (inputStates.Down) {
-      if (inputStates.Left || inputStates.Right) {
-        if (inputStates.Left) {
-          vgen.setDpad(controllerId, vgen.Dpad.DOWN_LEFT);
-        } else {
-          vgen.setDpad(controllerId, vgen.Dpad.DOWN_RIGHT);
-        }
-      } else {
-        vgen.setDpad(controllerId, vgen.Dpad.DOWN);
-      }
-    } else if (inputStates.Left) {
-      vgen.setDpad(controllerId, vgen.Dpad.LEFT);
-    } else if (inputStates.Right) {
-      vgen.setDpad(controllerId, vgen.Dpad.RIGHT);
-    }
-  } else {
-    vgen.setDpad(controllerId, vgen.Dpad.NONE);
-  }
 
 }
+
 var touchX1old = 0;
 var touchY1old = 0;
 var leftClicking = false;
@@ -526,7 +462,7 @@ hidStreamClient.on('end', function () {
   console.log('hidStreamClient Disconnected.');
   try {
     for (i in controllerIds) {
-      vgen.unplug(controllerIds[i]);
+      //vgen.unplug(controllerIds[i]);
     }
     controllerIds = [];
   } catch (error) {

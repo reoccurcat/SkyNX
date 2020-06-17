@@ -154,7 +154,7 @@ function startStreamer(arg) {
     args.push("ANALOG");
   }
   streamerProcess = spawn(
-    "./NxStreamingService.exe",
+    "./NxStreamingService",
     args,
     { cwd: cwd, stdio: "pipe" }
   );
@@ -274,7 +274,7 @@ ipcMain.on('donate', (event, fullMessage) => {
 })
 var autoLauncher = new AutoLaunch({
   name: 'SkyNX',
-  path: __dirname.replace("resources\\app\\", "") + '\\SkyNXStreamer.exe',
+  path: __dirname.replace("resources\\app\\", "") + '\\SkyNXStreamer',
 });
 ipcMain.on('autoStartupOn', (event, fullMessage) => {
   if (!autoLauncher.isEnabled) {
